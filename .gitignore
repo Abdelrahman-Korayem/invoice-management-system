@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Environment Variables (NEVER COMMIT!)
+.env
+.env.local
+.env.development
+.env.production
+backend/.env
+frontend/.env
+
+# Data Files (Don't commit user data)
+backend/data/users.json
+backend/data/invoices.json
+
+# Uploads (Don't commit user files)
+uploads/
+frontend/uploads/invoices/
+backend/uploads/
+
+# Build Files
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

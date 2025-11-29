@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 dist
 dist-ssr
@@ -23,5 +24,29 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment variables
+# Environment variables (CRITICAL - NEVER COMMIT!)
 .env
+.env.local
+.env.development
+.env.production
+
+# User Data & Security - NEVER commit these!
+data/users.json
+data/invoices.json
+data/*.json
+
+# User uploaded files
+uploads/
+uploads/**/*
+
+# Backup files
+*.backup
+*.bak
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Testing
+coverage/
