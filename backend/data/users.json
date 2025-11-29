@@ -1,0 +1,38 @@
+[
+  {
+    "id": "71c8ffb9-6623-4f43-a273-ecb3fd658e5f",
+    "name": "Abdelrahman ",
+    "email": "koraim23@gmail.com",
+    "password": "$2b$10$WaooRlFAbxV7QJ8eEwhkoeSW7fSlif.BcMcex5BfHtjUMl1FWw.Sy",
+    "phoneNumber": "01021684857",
+    "role": "client",
+    "createdAt": "2025-11-24T03:50:50.794Z"
+  },
+  {
+    "id": "fc11ed9a-b066-4c31-ab2d-5e21138289f3",
+    "name": "mohamed",
+    "email": "admin@example.com",
+    "password": "$2b$10$8tVeJ/Y8KsEJYbRkD0fd8uAu99scCnlLWwUJmopdYKUDc4tIpu2zq",
+    "phoneNumber": "123456",
+    "role": "admin",
+    "createdAt": "2025-11-24T04:14:32.481Z"
+  },
+  {
+    "id": "e66f39f2-5c17-49a4-a6fd-6296894448fc",
+    "name": "ahmed",
+    "email": "ahmed@gamil.com",
+    "password": "$2b$10$l9ekhhOZllJlaGrMrx2C1ORRj3elWZ8yC0UNfuz6t1BPHJLbYOAbm",
+    "phoneNumber": "01097955444",
+    "role": "sales",
+    "createdAt": "2025-11-24T04:17:02.558Z"
+  },
+  {
+    "id": "cccbe946-856d-4c3f-bf4e-0c8897957e14",
+    "name": "bob",
+    "email": "bob@gmail.com",
+    "password": "$2b$10$Uh.P2evraHl4TG6PBS1GauKvXSYmJGaeJaAzCDl4qloTlEK7fZR7C",
+    "phoneNumber": "0123456789",
+    "role": "sales",
+    "createdAt": "2025-11-25T11:06:58.848Z"
+  }
+]

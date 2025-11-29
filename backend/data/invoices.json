@@ -1,0 +1,191 @@
+[
+  {
+    "id": "c2e7a3d8-217f-4713-a2f8-4252806efa38",
+    "clientEmail": "koraim23@gmail.com",
+    "salesEmail": "ahmed@gamil.com",
+    "amount": 999.99,
+    "dueDate": "2025-12-29",
+    "description": "",
+    "status": "pending",
+    "attachment": "/uploads/invoices/1763959284457-315876000.png",
+    "statusHistory": [
+      {
+        "status": "pending",
+        "changedBy": "koraim23@gmail.com",
+        "changedAt": "2025-11-24T04:41:24.519Z"
+      },
+      {
+        "status": "pending",
+        "changedBy": "ahmed@gamil.com",
+        "changedAt": "2025-11-24T04:47:47.849Z"
+      },
+      {
+        "status": "overdue",
+        "changedBy": "ahmed@gamil.com",
+        "changedAt": "2025-11-24T15:17:21.241Z"
+      },
+      {
+        "status": "paid",
+        "changedBy": "ahmed@gamil.com",
+        "changedAt": "2025-11-24T18:09:16.610Z"
+      },
+      {
+        "status": "pending",
+        "changedBy": "ahmed@gamil.com",
+        "changedAt": "2025-11-25T10:44:26.605Z"
+      }
+    ],
+    "createdAt": "2025-11-24T04:41:24.519Z",
+    "communications": [
+      {
+        "id": "c33e7aa1-557d-46e2-8459-0ea43b411cab",
+        "type": "call",
+        "notes": "test",
+        "createdBy": "ahmed@gamil.com",
+        "createdAt": "2025-11-24T15:17:52.201Z"
+      },
+      {
+        "id": "dac63a8b-372e-4410-a983-7537d64bc625",
+        "type": "message",
+        "notes": "test",
+        "createdBy": "ahmed@gamil.com",
+        "createdAt": "2025-11-24T18:06:42.862Z"
+      },
+      {
+        "id": "e3d31144-28e7-46eb-afa5-92f09d0744fe",
+        "type": "message",
+        "notes": "test",
+        "createdBy": "ahmed@gamil.com",
+        "createdAt": "2025-11-25T10:44:48.855Z"
+      }
+    ]
+  },
+  {
+    "id": "9c5569e8-bd90-41c7-8a24-950cdbc880ee",
+    "clientEmail": "koraim23@gmail.com",
+    "salesEmail": "ahmed@gamil.com",
+    "amount": 2000,
+    "dueDate": "2026-02-01",
+    "description": "",
+    "status": "paid",
+    "attachment": "/uploads/invoices/1763997003899-854802778.png",
+    "statusHistory": [
+      {
+        "status": "pending",
+        "changedBy": "koraim23@gmail.com",
+        "changedAt": "2025-11-24T15:10:03.988Z"
+      },
+      {
+        "status": "paid",
+        "changedBy": "ahmed@gamil.com",
+        "changedAt": "2025-11-24T18:14:49.077Z"
+      }
+    ],
+    "createdAt": "2025-11-24T15:10:03.988Z"
+  },
+  {
+    "id": "cfda0ef0-14b4-4ae3-b5de-6df9434ea61b",
+    "clientEmail": "koraim23@gmail.com",
+    "salesEmail": "ahmed@gamil.com",
+    "amount": 1000,
+    "dueDate": "2025-10-12",
+    "description": "",
+    "status": "pending",
+    "attachment": "/uploads/invoices/1764008333696-695193468.png",
+    "statusHistory": [
+      {
+        "status": "pending",
+        "changedBy": "koraim23@gmail.com",
+        "changedAt": "2025-11-24T18:18:53.761Z"
+      },
+      {
+        "status": "cancelled",
+        "changedBy": "ahmed@gamil.com",
+        "changedAt": "2025-11-24T18:20:01.301Z"
+      },
+      {
+        "status": "pending",
+        "changedBy": "ahmed@gamil.com",
+        "changedAt": "2025-11-24T18:20:57.681Z"
+      }
+    ],
+    "createdAt": "2025-11-24T18:18:53.761Z",
+    "communications": [
+      {
+        "id": "f61971e4-7588-4304-bc7a-7c920438df67",
+        "type": "call",
+        "notes": "test",
+        "createdBy": "ahmed@gamil.com",
+        "createdAt": "2025-11-24T18:20:21.540Z"
+      }
+    ]
+  },
+  {
+    "id": "28c5ff13-2845-4f54-8798-c8f6bb58cb0a",
+    "clientEmail": "koraim23@gmail.com",
+    "salesEmail": "ahmed@gamil.com",
+    "amount": 1000,
+    "dueDate": "2026-02-01",
+    "description": "",
+    "status": "overdue",
+    "attachment": "/uploads/invoices/1764009086493-638607595.png",
+    "statusHistory": [
+      {
+        "status": "pending",
+        "changedBy": "koraim23@gmail.com",
+        "changedAt": "2025-11-24T18:31:26.579Z"
+      },
+      {
+        "status": "overdue",
+        "changedBy": "ahmed@gamil.com",
+        "changedAt": "2025-11-24T18:32:35.539Z"
+      }
+    ],
+    "createdAt": "2025-11-24T18:31:26.579Z",
+    "communications": [
+      {
+        "id": "ba237689-cbf8-4777-8972-126c7807f04b",
+        "type": "call",
+        "notes": "test",
+        "createdBy": "ahmed@gamil.com",
+        "createdAt": "2025-11-24T18:33:10.459Z"
+      }
+    ]
+  },
+  {
+    "id": "1375075c-ea30-4704-89ee-e98f1c579d2c",
+    "clientEmail": "koraim23@gmail.com",
+    "salesEmail": "ahmed@gamil.com",
+    "amount": 999.98,
+    "dueDate": "2026-12-01",
+    "description": "test",
+    "status": "pending",
+    "attachment": "/uploads/invoices/1764067187724-230383829.png",
+    "statusHistory": [
+      {
+        "status": "pending",
+        "changedBy": "koraim23@gmail.com",
+        "changedAt": "2025-11-25T10:39:47.813Z"
+      }
+    ],
+    "createdAt": "2025-11-25T10:39:47.814Z"
+  },
+  {
+    "id": "bd6bddf3-7fa9-4187-be8d-0a522afdbdda",
+    "clientEmail": "koraim23@gmail.com",
+    "salesEmail": "ahmed@gamil.com",
+    "amount": 8000,
+    "dueDate": "2025-12-01",
+    "description": "test",
+    "status": "pending",
+    "attachment": "/uploads/invoices/1764068600070-290838481.png",
+    "statusHistory": [
+      {
+        "status": "pending",
+        "changedBy": "koraim23@gmail.com",
+        "changedAt": "2025-11-25T11:03:20.087Z"
+      }
+    ],
+    "createdAt": "2025-11-25T11:03:20.087Z"
+  }
+]
