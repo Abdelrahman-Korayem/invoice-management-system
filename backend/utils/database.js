@@ -5,7 +5,7 @@ dotenv.config();
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI, { family: 4 });
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);
@@ -35,7 +35,7 @@ const invoiceSchema = new mongoose.Schema({
     quantity: Number,
     price: Number,
   }],
-  invoiceNumber: { type: String, unique: true },
+  invoiceNumber: { type: String, unique: true, sparse: true },
   filePath: { type: String },
   statusHistory: [{
     status: String,
@@ -45,6 +45,7 @@ const invoiceSchema = new mongoose.Schema({
   communications: [{
     sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     message: String,
+    type: { type: String, enum: ['email', 'call', 'message', 'other'], default: 'other' },
     timestamp: { type: Date, default: Date.now },
   }],
   emailNotifications: [{

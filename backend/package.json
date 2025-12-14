@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "server": "node server.js",
+    "dev": "node server.js",
     "create-admin": "node scripts/createAdmin.js",
     "cron:email-reminder": "node cron/emailReminder.js"
   },

@@ -20,11 +20,11 @@ router.get('/dashboard/stats', async (req, res) => {
     ]);
 
     const stats = await Invoice.aggregate([
-        { $group: { _id: '$status', count: { $sum: 1 } } }
+      { $group: { _id: '$status', count: { $sum: 1 } } }
     ]);
 
     const userStats = await User.aggregate([
-        { $group: { _id: '$role', count: { $sum: 1 } } }
+      { $group: { _id: '$role', count: { $sum: 1 } } }
     ]);
 
     const paidInvoices = stats.find(s => s._id === 'paid')?.count || 0;
@@ -61,28 +61,28 @@ router.get('/dashboard/all-invoices', async (req, res) => {
 
 // Get monthly revenue chart data
 router.get('/dashboard/monthly-revenue', async (req, res) => {
-    try {
-      const monthlyData = await Invoice.aggregate([
-        { $match: { status: 'paid' } },
-        {
-          $group: {
-            _id: { $dateToString: { format: '%Y-%m', date: '$updatedAt' } },
-            revenue: { $sum: '$amount' }
-          }
-        },
-        { $sort: { _id: 1 } }
-      ]);
-  
-      const chartData = monthlyData.map(item => ({
-        month: item._id,
-        revenue: item.revenue
-      }));
-  
-      res.json(chartData);
-    } catch (error) {
-      res.status(500).json({ error: 'Server error' });
-    }
-  });
+  try {
+    const monthlyData = await Invoice.aggregate([
+      { $match: { status: 'paid' } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m', date: '$updatedAt' } },
+          revenue: { $sum: '$amount' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const chartData = monthlyData.map(item => ({
+      month: item._id,
+      revenue: item.revenue
+    }));
+
+    res.json(chartData);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // Get all clients
 router.get('/clients', async (req, res) => {
@@ -106,38 +106,52 @@ router.get('/sales', async (req, res) => {
 
 // Sales Management - Create sales
 router.post('/sales', async (req, res) => {
-    try {
-      const { username, email, password, firstName, lastName } = req.body;
-  
-      if (!username || !email || !password) {
-        return res.status(400).json({ error: 'Username, email and password are required' });
-      }
-  
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ error: 'Email already registered' });
-      }
-  
-      const hashedPassword = await bcrypt.hash(password, 10);
-  
-      const newSales = new User({
-        username,
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        role: 'sales',
-      });
-  
-      await newSales.save();
-  
-      const { password: _, ...salesWithoutPassword } = newSales.toObject();
-      res.status(201).json(salesWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ error: 'Server error' });
+  try {
+    const { username, email, password, firstName, lastName, name, phoneNumber } = req.body;
+
+    let finalFirstName = firstName;
+    let finalLastName = lastName;
+
+    if (!finalFirstName && name) {
+      const parts = name.trim().split(' ');
+      finalFirstName = parts[0];
+      finalLastName = parts.slice(1).join(' ');
     }
-  });
-  
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Username, email and password are required' });
+    }
+
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email or Username already registered' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newSales = new User({
+      username,
+      email,
+      password: hashedPassword,
+      firstName: finalFirstName || '',
+      lastName: finalLastName || '',
+      role: 'sales',
+      phoneNumber,
+    });
+
+    await newSales.save();
+
+    const { password: _, ...salesWithoutPassword } = newSales.toObject();
+    res.status(201).json(salesWithoutPassword);
+  } catch (error) {
+    console.error('Error creating sales rep:', error);
+    res.status(500).json({ error: error.message || 'Server error' });
+  }
+});
+
 
 // Sales Management - Update sales
 router.put('/sales/:id', async (req, res) => {
@@ -145,17 +159,38 @@ router.put('/sales/:id', async (req, res) => {
     const { id } = req.params;
     const { username, email, firstName, lastName, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser && existingUser._id.toString() !== id) {
+    // Check if email is used by another user
+    if (email) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail && existingEmail._id.toString() !== id) {
         return res.status(400).json({ error: 'Email already in use' });
+      }
     }
 
-    const updateData = { username, email, firstName, lastName };
+    // Check if username is used by another user
+    if (username) {
+      const existingUsername = await User.findOne({ username });
+      if (existingUsername && existingUsername._id.toString() !== id) {
+        return res.status(400).json({ error: 'Username already in use' });
+      }
+    }
+
+    const updateData = {
+      ...(username && { username }),
+      ...(email && { email }),
+      ...(firstName && { firstName }),
+      ...(lastName && { lastName })
+    };
+
     if (password) {
-        updateData.password = await bcrypt.hash(password, 10);
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
-    const updatedSales = await User.findByIdAndUpdate(id, updateData, { new: true }).select('-password');
+    const updatedSales = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
 
     if (!updatedSales) {
       return res.status(404).json({ error: 'Sales representative not found' });
@@ -163,7 +198,8 @@ router.put('/sales/:id', async (req, res) => {
 
     res.json(updatedSales);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error updating sales rep:', error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -199,7 +235,7 @@ router.post('/invoices', async (req, res) => {
 
     const salesPerson = await User.findById(salesPersonId);
     if (!salesPerson || salesPerson.role !== 'sales') {
-        return res.status(404).json({ error: 'Sales representative not found' });
+      return res.status(404).json({ error: 'Sales representative not found' });
     }
 
     const newInvoice = new Invoice({
@@ -224,169 +260,319 @@ router.post('/invoices', async (req, res) => {
 
 // Get clients with their sales reps
 router.get('/clients-with-sales', async (req, res) => {
-    try {
-      const clients = await User.find({ role: 'client' }).select('-password');
-      const invoices = await Invoice.find().populate('salesPerson', 'username email');
-  
-      const clientsWithSales = clients.map(client => {
-        const clientInvoices = invoices.filter(inv => inv.client.toString() === client._id.toString());
-        const salesReps = [...new Set(clientInvoices.map(inv => inv.salesPerson))];
-        
-        return {
-          ...client.toObject(),
-          salesReps,
-          invoiceCount: clientInvoices.length
-        };
-      });
-  
-      res.json(clientsWithSales);
-    } catch (error) {
-      res.status(500).json({ error: 'Server error' });
-    }
-  });
-  
-  // Get analytics with filters
-  router.get('/analytics', async (req, res) => {
-    try {
-      const { period, status, groupBy } = req.query;
-      let filter = {};
-  
-      // Filter by status
-      if (status && status !== 'all') {
-        filter.status = status;
-      }
-  
-      // Filter by period
-      const today = dayjs();
-      if (period === 'day') {
-        filter.createdAt = { $gte: today.startOf('day').toDate(), $lte: today.endOf('day').toDate() };
-      } else if (period === 'week') {
-        filter.createdAt = { $gte: today.subtract(1, 'week').startOf('day').toDate() };
-      } else if (period === 'month') {
-        filter.createdAt = { $gte: today.startOf('month').toDate(), $lte: today.endOf('month').toDate() };
-      } else if (period === 'year') {
-        filter.createdAt = { $gte: today.startOf('year').toDate(), $lte: today.endOf('year').toDate() };
-      }
-  
-      const invoices = await Invoice.find(filter);
-      
-      let groupedData = {};
-      if (groupBy === 'status') {
-        groupedData = await Invoice.aggregate([
-            { $match: filter },
-            { $group: { _id: '$status', count: { $sum: 1 }, total: { $sum: '$amount' } } }
-        ]);
-      } else if (groupBy === 'date') {
-        groupedData = await Invoice.aggregate([
-            { $match: filter },
-            { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 }, total: { $sum: '$amount' } } },
-            { $sort: { _id: 1 } }
-        ]);
-      } else {
-        // Default: return summary
-        const summary = await Invoice.aggregate([
-            { $match: filter },
-            { $group: { _id: null, total: { $sum: 1 }, totalAmount: { $sum: '$amount' } } }
-        ]);
-        groupedData = summary[0] || { total: 0, totalAmount: 0 };
-      }
-  
-      res.json({
-        period,
-        status,
-        data: groupedData,
-        invoices
-      });
-    } catch (error) {
-      res.status(500).json({ error: 'Server error' });
-    }
-  });
-  
-  // Get invoice communications (admin can see all)
-  router.get('/invoice/:id/communications', async (req, res) => {
-    try {
-      const invoice = await Invoice.findById(req.params.id).populate('communications.sender', 'username');
-  
-      if (!invoice) {
-        return res.status(404).json({ error: 'Invoice not found' });
-      }
-  
-      res.json(invoice.communications || []);
-    } catch (error) {
-      res.status(500).json({ error: 'Server error' });
-    }
-  });
+  try {
+    const clients = await User.find({ role: 'client' }).select('-password');
+    const invoices = await Invoice.find().populate('salesPerson', 'username email');
 
-  // Comprehensive Analytics Dashboard Data
+    const clientsWithSales = clients.map(client => {
+      const clientInvoices = invoices.filter(inv => inv.client.toString() === client._id.toString());
+      const salesReps = [...new Set(clientInvoices.map(inv => inv.salesPerson))];
+
+      return {
+        ...client.toObject(),
+        salesReps,
+        invoiceCount: clientInvoices.length
+      };
+    });
+
+    res.json(clientsWithSales);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get analytics with filters
+router.get('/analytics', async (req, res) => {
+  try {
+    const { period, status, groupBy } = req.query;
+    let filter = {};
+
+    // Filter by status
+    if (status && status !== 'all') {
+      filter.status = status;
+    }
+
+    // Filter by period
+    const today = dayjs();
+    if (period === 'day') {
+      filter.createdAt = { $gte: today.startOf('day').toDate(), $lte: today.endOf('day').toDate() };
+    } else if (period === 'week') {
+      filter.createdAt = { $gte: today.subtract(1, 'week').startOf('day').toDate() };
+    } else if (period === 'month') {
+      filter.createdAt = { $gte: today.startOf('month').toDate(), $lte: today.endOf('month').toDate() };
+    } else if (period === 'year') {
+      filter.createdAt = { $gte: today.startOf('year').toDate(), $lte: today.endOf('year').toDate() };
+    }
+
+    const invoices = await Invoice.find(filter);
+
+    let groupedData = {};
+    if (groupBy === 'status') {
+      groupedData = await Invoice.aggregate([
+        { $match: filter },
+        { $group: { _id: '$status', count: { $sum: 1 }, total: { $sum: '$amount' } } }
+      ]);
+    } else if (groupBy === 'date') {
+      groupedData = await Invoice.aggregate([
+        { $match: filter },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 }, total: { $sum: '$amount' } } },
+        { $sort: { _id: 1 } }
+      ]);
+    } else {
+      // Default: return summary
+      const summary = await Invoice.aggregate([
+        { $match: filter },
+        { $group: { _id: null, total: { $sum: 1 }, totalAmount: { $sum: '$amount' } } }
+      ]);
+      groupedData = summary[0] || { total: 0, totalAmount: 0 };
+    }
+
+    res.json({
+      period,
+      status,
+      data: groupedData,
+      invoices
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get invoice communications (admin can see all)
+router.get('/invoice/:id/communications', async (req, res) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id).populate('communications.sender', 'username');
+
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    res.json(invoice.communications || []);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Comprehensive Analytics Dashboard Data
 router.get('/advanced-analytics', async (req, res) => {
-    try {
-        const today = dayjs();
+  try {
+    const today = dayjs();
 
-        const kpiAggregation = await Invoice.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    totalAmount: { $sum: '$amount' },
-                    collectedAmount: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] } },
-                    outstandingAmount: { $sum: { $cond: [{ $in: ['$status', ['pending', 'overdue']] }, '$amount', 0] } },
-                    overdueAmount: { $sum: { $cond: [{ $eq: ['$status', 'overdue'] }, '$amount', 0] } },
-                    totalInvoices: { $sum: 1 }
-                }
+    const kpiAggregation = await Invoice.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: '$amount' },
+          collectedAmount: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] } },
+          outstandingAmount: { $sum: { $cond: [{ $in: ['$status', ['pending', 'overdue']] }, '$amount', 0] } },
+          overdueAmount: { $sum: { $cond: [{ $eq: ['$status', 'overdue'] }, '$amount', 0] } },
+          totalInvoices: { $sum: 1 }
+        }
+      }
+    ]);
+    const kpis = kpiAggregation[0] || {};
+
+    const invoicesByStatus = await Invoice.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]);
+
+    const userCounts = await User.aggregate([
+      { $group: { _id: '$role', count: { $sum: 1 } } }
+    ]);
+
+    const salesPerformance = await Invoice.aggregate([
+      {
+        $group: {
+          _id: '$salesPerson',
+          totalAssigned: { $sum: '$amount' },
+          collected: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] } },
+          pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, '$amount', 0] } },
+          overdue: { $sum: { $cond: [{ $eq: ['$status', 'overdue'] }, '$amount', 0] } },
+          totalInvoices: { $sum: 1 }
+        }
+      },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'salesPerson' } },
+      { $unwind: '$salesPerson' },
+      {
+        $project: {
+          name: '$salesPerson.username',
+          email: '$salesPerson.email',
+          totalAssigned: 1,
+          collected: 1,
+          pending: 1,
+          overdue: 1,
+          totalInvoices: 1,
+          collectionRate: {
+            $round: [
+              {
+                $cond: [
+                  { $gt: ['$totalAssigned', 0] },
+                  { $multiply: [{ $divide: ['$collected', '$totalAssigned'] }, 100] },
+                  0
+                ]
+              },
+              0
+            ]
+          }
+        }
+      },
+      { $sort: { collected: -1 } }
+    ]);
+
+    // Cash Flow Analysis
+    const cashFlowDaily = await Invoice.aggregate([
+      { $match: { status: 'paid', updatedAt: { $gte: dayjs().subtract(30, 'days').toDate() } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
+          amount: { $sum: "$amount" },
+          count: { $sum: 1 }
+        }
+      },
+      { $project: { date: '$_id', amount: 1, count: 1, _id: 0 } },
+      { $sort: { date: 1 } }
+    ]);
+
+    const cashFlowMonthly = await Invoice.aggregate([
+      { $match: { status: 'paid', updatedAt: { $gte: dayjs().subtract(12, 'months').toDate() } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$updatedAt" } },
+          amount: { $sum: "$amount" },
+          count: { $sum: 1 }
+        }
+      },
+      { $project: { month: '$_id', amount: 1, count: 1, _id: 0 } },
+      { $sort: { month: 1 } }
+    ]);
+
+    // Cash Flow Weekly
+    const cashFlowWeekly = await Invoice.aggregate([
+      { $match: { status: 'paid', updatedAt: { $gte: dayjs().subtract(12, 'weeks').toDate() } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%U", date: "$updatedAt" } },
+          amount: { $sum: "$amount" },
+          count: { $sum: 1 }
+        }
+      },
+      { $project: { week: '$_id', amount: 1, count: 1, _id: 0 } },
+      { $sort: { week: 1 } }
+    ]);
+
+    // Top 10 Delayed Clients
+    const delayedClients = await Invoice.aggregate([
+      { $match: { status: 'overdue' } },
+      {
+        $group: {
+          _id: '$client',
+          totalOverdue: { $sum: '$amount' },
+          overdueCount: { $sum: 1 },
+          avgDaysOverdue: {
+            $avg: {
+              $divide: [{ $subtract: [new Date(), '$dueDate'] }, 1000 * 60 * 60 * 24]
             }
-        ]);
-        const kpis = kpiAggregation[0] || {};
+          }
+        }
+      },
+      { $sort: { totalOverdue: -1 } },
+      { $limit: 10 },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'client' } },
+      { $unwind: '$client' },
+      {
+        $project: {
+          name: { $concat: ['$client.firstName', ' ', '$client.lastName'] },
+          email: '$client.email',
+          totalOverdue: 1,
+          overdueCount: 1,
+          avgDaysOverdue: { $round: ['$avgDaysOverdue', 0] }
+        }
+      }
+    ]);
 
-        const invoicesByStatus = await Invoice.aggregate([
-            { $group: { _id: '$status', count: { $sum: 1 } } }
-        ]);
+    // Top 10 Best Clients (Highest Paid Amount)
+    const bestClients = await Invoice.aggregate([
+      { $match: { status: 'paid' } },
+      {
+        $group: {
+          _id: '$client',
+          totalPaid: { $sum: '$amount' },
+          paidCount: { $sum: 1 }
+        }
+      },
+      { $sort: { totalPaid: -1 } },
+      { $limit: 10 },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'client' } },
+      { $unwind: '$client' },
+      {
+        $project: {
+          name: { $concat: ['$client.firstName', ' ', '$client.lastName'] },
+          email: '$client.email',
+          totalInvoices: '$paidCount',
+          paidOnTime: '$paidCount'
+        }
+      }
+    ]);
 
-        const userCounts = await User.aggregate([
-            { $group: { _id: '$role', count: { $sum: 1 } } }
-        ]);
+    // Forecast (Next 30 Days)
+    const forecast = await Invoice.aggregate([
+      { $match: { status: 'pending', dueDate: { $gte: new Date(), $lte: dayjs().add(30, 'days').toDate() } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$dueDate" } },
+          expectedAmount: { $sum: "$amount" },
+          invoiceCount: { $sum: 1 }
+        }
+      },
+      { $project: { date: '$_id', expectedAmount: 1, invoiceCount: 1, _id: 0 } },
+      { $sort: { date: 1 } }
+    ]);
 
-        const salesPerformance = await Invoice.aggregate([
-            { $group: { _id: '$salesPerson', totalAssigned: { $sum: '$amount' }, collected: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] } }, totalInvoices: { $sum: 1 } } },
-            { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'salesPerson' } },
-            { $unwind: '$salesPerson' },
-            { $project: { name: '$salesPerson.username', email: '$salesPerson.email', totalAssigned: 1, collected: 1, totalInvoices: 1, collectionRate: { $cond: [{ $gt: ['$totalAssigned', 0] }, { $multiply: [{ $divide: ['$collected', '$totalAssigned'] }, 100] }, 0] } } }
-        ]);
-
-        // This is a simplified version of the original. A full implementation would be more complex.
-        res.json({
-            kpis: {
-                totalInvoices: kpis.totalInvoices || 0,
-                totalAmount: kpis.totalAmount || 0,
-                collectedAmount: kpis.collectedAmount || 0,
-                outstandingAmount: kpis.outstandingAmount || 0,
-                overdueAmount: kpis.overdueAmount || 0,
-                collectionRate: kpis.totalAmount ? (kpis.collectedAmount / kpis.totalAmount) * 100 : 0,
-                clientCount: userCounts.find(u => u._id === 'client')?.count || 0,
-                salesCount: userCounts.find(u => u._id === 'sales')?.count || 0
-            },
-            invoicesByStatus: invoicesByStatus.reduce((acc, cur) => ({ ...acc, [cur._id]: cur.count }), {}),
-            salesPerformance,
-            lastUpdated: new Date().toISOString()
-        });
-    } catch (error) {
-        console.error('Advanced analytics error:', error);
-        res.status(500).json({ error: 'Server error' });
-    }
+    res.json({
+      kpis: {
+        totalInvoices: kpis.totalInvoices || 0,
+        totalAmount: kpis.totalAmount || 0,
+        collectedAmount: kpis.collectedAmount || 0,
+        outstandingAmount: kpis.outstandingAmount || 0,
+        overdueAmount: kpis.overdueAmount || 0,
+        collectionRate: kpis.totalAmount ? parseFloat(((kpis.collectedAmount / kpis.totalAmount) * 100).toFixed(1)) : 0,
+        clientCount: userCounts.find(u => u._id === 'client')?.count || 0,
+        salesCount: userCounts.find(u => u._id === 'sales')?.count || 0
+      },
+      invoicesByStatus: invoicesByStatus.reduce((acc, cur) => ({ ...acc, [cur._id]: cur.count }), {}),
+      salesPerformance,
+      cashFlow: {
+        daily: cashFlowDaily,
+        monthly: cashFlowMonthly,
+        weekly: cashFlowWeekly
+      },
+      clientAnalytics: {
+        best: bestClients,
+        worst: delayedClients
+      },
+      forecast,
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Advanced analytics error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Export data as JSON
 router.get('/export/invoices', async (req, res) => {
-    try {
-        const { status, startDate, endDate } = req.query;
-        let filter = {};
-        if (status && status !== 'all') filter.status = status;
-        if (startDate) filter.createdAt = { ...filter.createdAt, $gte: dayjs(startDate).toDate() };
-        if (endDate) filter.createdAt = { ...filter.createdAt, $lte: dayjs(endDate).toDate() };
+  try {
+    const { status, startDate, endDate } = req.query;
+    let filter = {};
+    if (status && status !== 'all') filter.status = status;
+    if (startDate) filter.createdAt = { ...filter.createdAt, $gte: dayjs(startDate).toDate() };
+    if (endDate) filter.createdAt = { ...filter.createdAt, $lte: dayjs(endDate).toDate() };
 
-        const invoices = await Invoice.find(filter).populate('client salesPerson', 'username email');
-        res.json({ data: invoices, summary: { totalRecords: invoices.length } });
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
+    const invoices = await Invoice.find(filter).populate('client salesPerson', 'username email');
+    res.json({ data: invoices, summary: { totalRecords: invoices.length } });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 export default router;

@@ -33,7 +33,7 @@ router.post('/client/create', upload.single('attachment'), async (req, res) => {
     if (!salesPerson || salesPerson.role !== 'sales') {
       return res.status(404).json({ error: 'Sales representative not found' });
     }
-    
+
     const client = await User.findById(clientId);
 
     const newInvoice = new Invoice({
