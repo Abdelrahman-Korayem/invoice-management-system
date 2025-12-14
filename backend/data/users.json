@@ -25,14 +25,5 @@
     "phoneNumber": "01097955444",
     "role": "sales",
     "createdAt": "2025-11-24T04:17:02.558Z"
-  },
-  {
-    "id": "cccbe946-856d-4c3f-bf4e-0c8897957e14",
-    "name": "bob",
-    "email": "bob@gmail.com",
-    "password": "$2b$10$Uh.P2evraHl4TG6PBS1GauKvXSYmJGaeJaAzCDl4qloTlEK7fZR7C",
-    "phoneNumber": "0123456789",
-    "role": "sales",
-    "createdAt": "2025-11-25T11:06:58.848Z"
   }
 ]
