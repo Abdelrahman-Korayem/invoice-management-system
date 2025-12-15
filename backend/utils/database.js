@@ -3,27 +3,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Cache the database connection
-let cachedConnection = null;
-
 const connectDB = async () => {
-  if (cachedConnection) {
-    return cachedConnection;
-  }
-
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      family: 4,
-      bufferCommands: false, // Disable Mongoose buffering to fail fast if no connection
-    });
-
-    cachedConnection = conn;
+    await mongoose.connect(process.env.MONGO_URI, { family: 4 });
     console.log('MongoDB connected successfully');
-    return conn;
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    // Don't exit process in serverless; let it throw so the request fails cleanly with a log
-    throw error;
+    process.exit(1);
   }
 };
 

@@ -301,9 +301,25 @@ const processInvoiceReminders = async () => {
   }
 };
 
-// This function will be called by the Vercel Cron handler
-// No auto-scheduling here to avoid side effects during import
+connectDB().then(() => {
+  // Schedule cron job to run every day at midnight (00:00)
+  cron.schedule('0 0 * * *', () => {
+    processInvoiceReminders();
+  }, {
+    timezone: 'UTC'
+  });
 
+  // Also run at 9 AM for additional check
+  cron.schedule('0 9 * * *', () => {
+    processInvoiceReminders();
+  }, {
+    timezone: 'UTC'
+  });
+
+  console.log('📧 Email reminder system initialized');
+  console.log('   - Daily check at 00:00 UTC');
+  console.log('   - Additional check at 09:00 UTC');
+});
 
 
 // Export for manual triggering (testing)
