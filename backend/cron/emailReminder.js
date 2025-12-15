@@ -28,7 +28,7 @@ const getEmailTemplate = (type, data) => {
     background-color: #F1F3E0;
     border-radius: 10px;
   `;
-  
+
   const headerStyle = `
     background-color: #778873;
     color: white;
@@ -36,14 +36,14 @@ const getEmailTemplate = (type, data) => {
     border-radius: 10px 10px 0 0;
     text-align: center;
   `;
-  
+
   const contentStyle = `
     background-color: white;
     padding: 30px;
     border-radius: 0 0 10px 10px;
     border: 2px solid #D2DCB6;
   `;
-  
+
   const buttonStyle = `
     display: inline-block;
     background-color: #A1BC98;
@@ -76,7 +76,7 @@ const getEmailTemplate = (type, data) => {
         </div>
       </div>
     `,
-    
+
     // Client reminder - 7 days before
     client_7_days: `
       <div style="${baseStyle}">
@@ -98,7 +98,7 @@ const getEmailTemplate = (type, data) => {
         </div>
       </div>
     `,
-    
+
     // Sales notification - 7 days before
     sales_7_days: `
       <div style="${baseStyle}">
@@ -126,7 +126,7 @@ const getEmailTemplate = (type, data) => {
         </div>
       </div>
     `,
-    
+
     // Manager notification - 1 day before
     manager_1_day: `
       <div style="${baseStyle}">
@@ -159,7 +159,7 @@ const getEmailTemplate = (type, data) => {
       </div>
     `
   };
-  
+
   return templates[type] || '';
 };
 
@@ -169,9 +169,9 @@ const sendEmail = async (to, subject, htmlContent, textContent) => {
     console.log('No recipient email provided');
     return;
   }
-  
+
   const transporter = createTransporter();
-  
+
   try {
     const info = await transporter.sendMail({
       from: `"Invoice Management System" <${getAdminEmail()}>`,
@@ -209,19 +209,19 @@ const logEmailNotification = async (invoiceId, type, recipient, success) => {
 // Main function to check and send reminders
 const processInvoiceReminders = async () => {
   console.log(`[${new Date().toISOString()}] Running email reminder check...`);
-  
+
   try {
     const invoices = await Invoice.find({ status: { $nin: ['paid', 'cancelled'] } })
-                                  .populate('client', 'firstName lastName email')
-                                  .populate('salesPerson', 'email');
+      .populate('client', 'firstName lastName email')
+      .populate('salesPerson', 'email');
 
     const today = dayjs().startOf('day');
     let emailsSent = 0;
-    
+
     for (const invoice of invoices) {
       const dueDate = dayjs(invoice.dueDate).startOf('day');
       const daysUntilDue = dueDate.diff(today, 'day');
-      
+
       const emailData = {
         invoiceId: invoice.id,
         clientName: invoice.client ? `${invoice.client.firstName} ${invoice.client.lastName}` : invoice.clientName,
@@ -230,96 +230,80 @@ const processInvoiceReminders = async () => {
         amount: invoice.amount,
         dueDate: dayjs(invoice.dueDate).format('MMMM D, YYYY')
       };
-      
+
       // 14 days before - Client reminder
       if (daysUntilDue === 14) {
         const html = getEmailTemplate('client_14_days', emailData);
         const text = `Dear ${emailData.clientName}, Your invoice #${emailData.invoiceId} is due in 14 days. Amount: $${emailData.amount}. Due Date: ${emailData.dueDate}.`;
-        
+
         const success = await sendEmail(
           emailData.clientEmail,
           '📋 Upcoming Invoice Due Date Reminder - 14 Days',
           html,
           text
         );
-        
+
         await logEmailNotification(invoice.id, 'client_14_days', emailData.clientEmail, success);
         if (success) emailsSent++;
       }
-      
+
       // 7 days before - Client reminder
       if (daysUntilDue === 7) {
         // Client email
         const clientHtml = getEmailTemplate('client_7_days', emailData);
         const clientText = `IMPORTANT: Dear ${emailData.clientName}, Your invoice #${emailData.invoiceId} is due in 7 days. Amount: $${emailData.amount}. Due Date: ${emailData.dueDate}. Please arrange payment soon.`;
-        
+
         const clientSuccess = await sendEmail(
           emailData.clientEmail,
           '⚠️ Invoice Due in 7 Days - Action Required',
           clientHtml,
           clientText
         );
-        
+
         await logEmailNotification(invoice.id, 'client_7_days', emailData.clientEmail, clientSuccess);
         if (clientSuccess) emailsSent++;
-        
+
         // Sales email
         const salesHtml = getEmailTemplate('sales_7_days', emailData);
         const salesText = `Client ${emailData.clientName} has an invoice #${emailData.invoiceId} due in 7 days. Amount: $${emailData.amount}. Please follow up.`;
-        
+
         const salesSuccess = await sendEmail(
           emailData.salesEmail,
           '📊 Client Invoice Approaching Due Date - Follow Up Required',
           salesHtml,
           salesText
         );
-        
+
         await logEmailNotification(invoice.id, 'sales_7_days', emailData.salesEmail, salesSuccess);
         if (salesSuccess) emailsSent++;
       }
-      
+
       // 1 day before - Manager notification
       if (daysUntilDue === 1) {
         const html = getEmailTemplate('manager_1_day', emailData);
         const text = `URGENT: Invoice #${emailData.invoiceId} for ${emailData.clientName} is due tomorrow. Amount: $${emailData.amount}. Sales Rep: ${emailData.salesEmail}. Immediate action required.`;
-        
+
         const success = await sendEmail(
           getAdminEmail(),
           '🚨 URGENT: Client Invoice Due Tomorrow - Immediate Action Required',
           html,
           text
         );
-        
+
         await logEmailNotification(invoice.id, 'manager_1_day', getAdminEmail(), success);
         if (success) emailsSent++;
       }
     }
-    
+
     console.log(`[${new Date().toISOString()}] Email reminder check completed. Sent ${emailsSent} emails.`);
   } catch (error) {
     console.error('Error in email reminder job:', error);
   }
 };
 
-connectDB().then(() => {
-    // Schedule cron job to run every day at midnight (00:00)
-    cron.schedule('0 0 * * *', () => {
-    processInvoiceReminders();
-    }, {
-    timezone: 'UTC'
-    });
+// This function will be called by the Vercel Cron handler
+// No auto-scheduling here to avoid side effects during import
 
-    // Also run at 9 AM for additional check
-    cron.schedule('0 9 * * *', () => {
-    processInvoiceReminders();
-    }, {
-    timezone: 'UTC'
-    });
-
-    console.log('📧 Email reminder system initialized');
-    console.log('   - Daily check at 00:00 UTC');
-    console.log('   - Additional check at 09:00 UTC');
-});
 
 
 // Export for manual triggering (testing)
