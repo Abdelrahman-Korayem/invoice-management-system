@@ -19,7 +19,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to database
-connectDB();
+// Connect to database (Non-blocking)
+connectDB().catch(err => console.error('Initial DB connection failed:', err));
 
 // CORS Configuration
 app.use(cors({
@@ -30,7 +31,9 @@ app.use(cors({
 app.use(express.json());
 
 // Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, '..', 'frontend', 'uploads')));
+// Serve uploaded files - DISABLED FOR SERVERLESS
+// app.use('/uploads', express.static(path.join(__dirname, '..', 'frontend', 'uploads')));
+
 
 // Routes
 app.use('/api/auth', authRoutes);
